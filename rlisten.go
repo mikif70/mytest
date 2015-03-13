@@ -2,15 +2,42 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
 )
 
+type Config struct {
+	wrapUrl  string
+	ssdbUrl  string
+	wrapAddr *net.TCPAddr
+	ssdbAddr *net.TCPAddr
+}
+
+var (
+	config = &Config{
+		wrapUrl: "0.0.0.0:6380",
+		ssdbUrl: "10.39.80.181:8888",
+	}
+)
+
+func parseCmd([]byte) {
+
+}
+
+func init() {
+	flag.StringVar(&config.ssdbUrl, "s", config.ssdbUrl, "ssdb ip:port")
+	flag.StringVar(&config.wrapUrl, "l", config.wrapUrl, "listen ip:port")
+}
+
 func main() {
-	addr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:6380")
-	fmt.Printf("Listen: %+v\n", addr)
-	ln, err := net.ListenTCP("tcp", addr)
+	flag.Parse()
+
+	config.ssdbAddr, _ = net.ResolveTCPAddr("tcp", config.ssdbUrl)
+	config.wrapAddr, _ = net.ResolveTCPAddr("tcp", config.wrapUrl)
+	fmt.Printf("Listen: %+v\n", config.wrapAddr)
+	ln, err := net.ListenTCP("tcp", config.wrapAddr)
 	if err != nil {
 		fmt.Println("Listen err: ", err.Error())
 		return
@@ -40,12 +67,13 @@ func main() {
 				return
 			}
 
+			parseCmd(buf[:nr])
+
 			file.Write(buf[:nr])
 			file.Write([]byte("++++++++\n\r"))
-			fmt.Printf("Read: %d - %v\n", nr, string(buf[:nr]))
+			fmt.Printf("Read %d bytes:\n%v++++++++\n", nr, string(buf[:nr]))
 
-			ssdbAddr, _ := net.ResolveTCPAddr("tcp", "10.39.80.181:8888")
-			ssdb, err := net.DialTCP("tcp", nil, ssdbAddr)
+			ssdb, err := net.DialTCP("tcp", nil, config.ssdbAddr)
 			if err != nil {
 				fmt.Println("Dial err: ", err.Error())
 				return
@@ -62,7 +90,7 @@ func main() {
 			}
 
 			conn.Write(buf[:nr])
-			fmt.Printf("Reply: %d - %v\n", nr, string(buf[:nr]))
+			fmt.Printf("Reply %d bytes:\n%v--------\n\n", nr, string(buf[:nr]))
 			file.Write(buf[:nr])
 			file.Write([]byte("--------\n\r"))
 
