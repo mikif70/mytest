@@ -2,8 +2,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	//	"io"
 	"net"
 	"os"
 )
@@ -22,8 +24,22 @@ var (
 	}
 )
 
-func parseCmd([]byte) {
+func parseCmd(buf []byte) {
 
+	row := bytes.Split(buf[:len(buf)-1], []byte("\n"))
+
+	fmt.Println("Row: ", row)
+
+	for i := range row {
+		switch row[i][0] {
+		case '*':
+			fmt.Println("Array: ", string(row[i][1:]))
+		case '$':
+			fmt.Println("Len: ", string(row[i][1:]))
+		default:
+			fmt.Println("Cmd: ", string(row[i]))
+		}
+	}
 }
 
 func init() {
